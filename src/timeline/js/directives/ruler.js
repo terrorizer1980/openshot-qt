@@ -45,6 +45,10 @@ App.directive("tlScrollableTracks", function () {
     restrict: "A",
     link: function (scope, element, attrs) {
 
+      /**
+       * if ctrl is held, scroll in or out.
+       * Implimentation copied from zoomSlider zoomIn zoomOut
+       */
       element.on('wheel',function (e) {
         if (e.ctrlKey) {
           e.preventDefault(); // Don't scroll like a browser
