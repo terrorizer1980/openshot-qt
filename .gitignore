@@ -10,3 +10,4 @@ openshot_qt.egg-info
 
 protobuf_data/
 openshot_qt/
+.qt_for_python/

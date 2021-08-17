@@ -45,6 +45,35 @@ App.directive("tlScrollableTracks", function () {
     restrict: "A",
     link: function (scope, element, attrs) {
 
+      element.on('wheel',function (e) {
+        if (e.ctrlKey) {
+          e.preventDefault(); // Don't scroll like a browser
+        } else {
+          return;
+        }
+        deltaY = e.originalEvent.deltaY;
+        scale = scope.project.scale;
+        let newScale;
+        if (deltaY > 0) { // Scroll down: Zoom out
+          if (scale >= 10.0) {
+            newScale = scale + 5;
+          } else if (scale >= 4.0) {
+            newScale = scale + 2.0;
+          } else {
+            newScale = Math.min(scale * 1.2 , 4.0);
+          }
+        } else { // Scroll Up: Zoom in
+          if (scale >= 10.0) {
+            newScale = scale - 5;
+          } else if (scale >= 4.0) {
+            newScale = scale - 2.0;
+          } else {
+            newScale = scale * .8;
+          }
+        }
+        scope.setScale(newScale);
+      });
+
       // Sync ruler to track scrolling
       element.on("scroll", function () {
         //set amount scrolled
@@ -137,7 +166,6 @@ App.directive("tlBody", function () {
     }
   };
 });
-
 
 // The HTML5 canvas ruler
 App.directive("tlRuler", function ($timeout) {
