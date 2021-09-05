@@ -198,6 +198,12 @@ effect_options = {
             "type": "link",
             "setting": "model-instructions"
         },
+                {
+            "value": "/home/FLAVR_2x_torchscript_half.pt",
+            "title": "Model Weights",
+            "type": "text",
+            "setting": "model-weights"
+        },
         {
             "title": "Processing Device",
             "setting": "processing-device",
