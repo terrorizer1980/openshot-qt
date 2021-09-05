@@ -77,6 +77,7 @@ class FilesTreeView(QTreeView):
 
             menu.addAction(self.win.actionPreview_File)
             menu.addAction(self.win.actionSplitClip)
+            menu.addAction(self.win.actionSlowMotion)
             menu.addAction(self.win.actionAdd_to_Timeline)
             menu.addAction(self.win.actionFile_Properties)
             menu.addSeparator()

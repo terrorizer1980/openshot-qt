@@ -1578,6 +1578,8 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
             self.actionAdd_to_Timeline.trigger()
         elif key.matches(self.getShortcutByName("actionSplitClip")) == QKeySequence.ExactMatch:
             self.actionSplitClip.trigger()
+        elif key.matches(self.getShortcutByName("actionSlowMotion")) == QKeySequence.ExactMatch:
+            self.actionSlowMotion.trigger()
         elif key.matches(self.getShortcutByName("actionSnappingTool")) == QKeySequence.ExactMatch:
             self.actionSnappingTool.trigger()
         elif key.matches(self.getShortcutByName("actionJumpStart")) == QKeySequence.ExactMatch:
@@ -1695,6 +1697,36 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
             log.info('Cutting Finished')
         else:
             log.info('Cutting Cancelled')
+
+    def actionSlowMotion_trigger(self):
+        log.info("actionSlowMotion_trigger")
+        # Loop through selected files (set 1 selected file if more than 1)
+        f = self.files_model.current_file()
+        # Add clip for current preview file
+        clip = openshot.Clip(f.absolute_path())
+        # Show effect pre-processing window
+        from windows.process_effect import ProcessEffect
+        from classes.effect_init import effect_options
+        action_name = "Frame Interpolation"
+        # Handle custom effect dialogs
+        # Get effect options
+        effect_params = effect_options.get(action_name)
+
+        try:
+            win = ProcessEffect(None, action_name, effect_params, clip)
+
+        except ModuleNotFoundError as e:
+            print("[ERROR]: " + str(e))
+            return
+        # Run the dialog event loop - blocking interaction on this window during this time
+        result = win.exec_()
+
+        if result == QDialog.Accepted:
+            log.info('Start processing')
+        else:
+            log.info('Cancel processing')
+            return
+
 
     def actionRemove_from_Project_trigger(self):
         log.debug("actionRemove_from_Project_trigger")

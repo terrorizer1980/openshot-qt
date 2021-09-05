@@ -1496,6 +1496,18 @@
     <string>Ctrl+X</string>
    </property>
   </action>
+  <action name="actionSlowMotion">
+   <property name="icon">
+    <iconset theme="gtk-edit" resource="../../../images/openshot.qrc">
+     <normaloff>:/icons/Humanity/actions/16/gtk-edit.svg</normaloff>:/icons/Humanity/actions/16/gtk-edit.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Slow Motion</string>
+   </property>
+   <property name="toolTip">
+    <string>Slow Motion</string>
+   </property>
+  </action>
   <action name="actionProperties">
    <property name="icon">
     <iconset theme="document-properties" resource="../../../images/openshot.qrc">

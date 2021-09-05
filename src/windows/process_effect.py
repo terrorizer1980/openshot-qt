@@ -49,7 +49,7 @@ class ProcessEffect(QDialog):
     # Path to ui file
     ui_path = os.path.join(info.PATH, 'windows', 'ui', 'process-effect.ui')
 
-    def __init__(self, clip_id, effect_name, effect_params):
+    def __init__(self, clip_id, effect_name, effect_params, clip_obj = None):
 
         if not openshot.Clip().COMPILED_WITH_CV:
             raise ModuleNotFoundError("Openshot not compiled with OpenCV")
@@ -61,12 +61,15 @@ class ProcessEffect(QDialog):
         self.effect_name = effect_name
         self.context = {}
 
-        # Access C++ timeline and find the Clip instance which this effect should be applied to
-        timeline_instance = get_app().window.timeline_sync.timeline
-        for clip_instance in timeline_instance.Clips():
-            if clip_instance.Id() == self.clip_id:
-                self.clip_instance = clip_instance
-                break
+        if clip_obj:
+            self.clip_instance = clip_obj
+        else:
+            # Access C++ timeline and find the Clip instance which this effect should be applied to
+            timeline_instance = get_app().window.timeline_sync.timeline
+            for clip_instance in timeline_instance.Clips():
+                if clip_instance.Id() == self.clip_id:
+                    self.clip_instance = clip_instance
+                    break
 
         # Load UI from designer & init
         ui_util.load_ui(self, self.ui_path)

@@ -190,5 +190,29 @@ effect_options = {
             ],
             "type": "dropdown",
         }
+    ],
+       "Frame Interpolation": [
+        {
+            "value": "Add link here",
+            "title": "Click here for instructions and dependencies...",
+            "type": "link",
+            "setting": "model-instructions"
+        },
+        {
+            "title": "Processing Device",
+            "setting": "processing-device",
+            "value": "GPU",
+            "values": [
+                {
+                    "value": "GPU",
+                    "name": "GPU"
+                },
+                {
+                    "value": "CPU",
+                    "name": "CPU"
+                }
+            ],
+            "type": "dropdown",
+        }
     ]
 }

@@ -656,6 +656,14 @@
   },
   {
     "category": "Keyboard",
+    "title": "Slow Motion",
+    "restart": true,
+    "setting": "actionSlowMotion",
+    "value": "",
+    "type": "text"
+  },
+  {
+    "category": "Keyboard",
     "title": "Thumbnail View",
     "restart": true,
     "setting": "actionThumbnailView",
