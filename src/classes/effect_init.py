@@ -26,7 +26,9 @@
  along with OpenShot Library.  If not, see <http://www.gnu.org/licenses/>.
  """
 from classes.info import YOLO_PATH
+from classes.info import USER_PATH
 import os
+import uuid
 # Not all Effects support pre-processing, so for now, this is a hard-coded
 # solution to providing the pre-processing params needed for these special effects.
 
@@ -191,14 +193,14 @@ effect_options = {
             "type": "dropdown",
         }
     ],
-       "Frame Interpolation": [
+    "Frame Interpolation": [
         {
             "value": "Add link here",
             "title": "Click here for instructions and dependencies...",
             "type": "link",
             "setting": "model-instructions"
         },
-                {
+        {
             "value": "/home/FLAVR_2x_torchscript_half.pt",
             "title": "Model Weights",
             "type": "text",
@@ -219,6 +221,41 @@ effect_options = {
                 }
             ],
             "type": "dropdown",
-        }
+        },
+        {
+            "title": "Processing Size",
+            "setting": "processing-size",
+            "value": 2,
+            "values": [
+                {
+                    "value": 1,
+                    "name": "1920x1080"
+                },
+                {
+                    "value": 2,
+                    "name": "1280x720"
+                },
+                {
+                    "value": 3,
+                    "name": "800x600"
+                },
+                {
+                    "value": 4,
+                    "name": "640x480"
+                },
+                {
+                    "value": 5,
+                    "name": "320x240"
+                },
+            ],
+            "type": "dropdown",
+        },
+        
+        {
+            "title": "Save Path",
+            "value": os.path.join(USER_PATH, str(uuid.uuid4()) + ".avi"),
+            "type": "text",
+            "setting": "save-path"
+        },
     ]
 }
