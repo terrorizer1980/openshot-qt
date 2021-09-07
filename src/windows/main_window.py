@@ -1700,6 +1700,7 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         # show dialog
         from windows.cutting import Cutting
         win = Cutting(f)
+        
         # Run the dialog event loop - blocking interaction on this window during that time
         result = win.exec_()
         if result == QDialog.Accepted:
@@ -1711,8 +1712,17 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         log.info("actionSlowMotion_trigger")
         # Loop through selected files (set 1 selected file if more than 1)
         f = self.files_model.current_file()
+
+        
         # Add clip for current preview file
         clip = openshot.Clip(f.absolute_path())
+        
+        if 'start' in f.data:
+            clip.Start(f.data['start'])
+        
+        if 'end' in f.data:
+            clip.End(f.data['end'])
+        
         # Show effect pre-processing window
         from windows.process_effect import ProcessEffect
         from classes.effect_init import effect_options
@@ -1720,10 +1730,9 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         # Handle custom effect dialogs
         # Get effect options
         effect_params = effect_options.get(action_name)
-
+        
         try:
             win = ProcessEffect(None, action_name, effect_params, clip)
-
         except ModuleNotFoundError as e:
             print("[ERROR]: " + str(e))
             return
