@@ -1713,7 +1713,6 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         # Loop through selected files (set 1 selected file if more than 1)
         f = self.files_model.current_file()
 
-        
         # Add clip for current preview file
         clip = openshot.Clip(f.absolute_path())
         
@@ -1736,14 +1735,20 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         except ModuleNotFoundError as e:
             print("[ERROR]: " + str(e))
             return
+        
         # Run the dialog event loop - blocking interaction on this window during this time
         result = win.exec_()
-
+        
         if result == QDialog.Accepted:
             log.info('Start processing')
         else:
             log.info('Cancel processing')
             return
+
+        save_path = win.context['save-path']
+        
+        # Create new file on the project based on the saved path
+        self.files_model.add_files([save_path])
 
 
     def actionRemove_from_Project_trigger(self):

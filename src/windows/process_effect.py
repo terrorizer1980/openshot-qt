@@ -368,8 +368,10 @@ class ProcessEffect(QDialog):
         if(not self.cancel_clip_processing):
             # Load processed data into effect
             self.effect = openshot.EffectInfo().CreateEffect(self.effect_name)
-            self.effect.SetJson( '{"protobuf_data_path": "%s"}' % protobufPath )
-            self.effect.Id(ID)
+            
+            if self.effect != None:
+                self.effect.SetJson( '{"protobuf_data_path": "%s"}' % protobufPath )
+                self.effect.Id(ID)
 
             # Accept dialog
             super(ProcessEffect, self).accept()
