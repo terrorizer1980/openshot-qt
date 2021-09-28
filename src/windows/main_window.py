@@ -1739,7 +1739,7 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         # Run the dialog event loop - blocking interaction on this window during this time
         result = win.exec_()
         
-        if result == QDialog.Accepted:
+        if result == QDialog.Accepted and not win.cancel_clip_processing:
             log.info('Start processing')
         else:
             log.info('Cancel processing')

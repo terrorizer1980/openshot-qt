@@ -365,6 +365,18 @@ class ProcessEffect(QDialog):
             if(self.cancel_clip_processing):
                 processing.CancelProcessing()
 
+            # Check for errors while the pre-processing is running
+            start = time.time()
+            while processing.GetError():
+                self.error_label.setText(processing.GetErrorMessage())
+                self.error_label.repaint()
+                if (time.time() - start) > 3:
+                    self.exporting = False
+                    processing.CancelProcessing()
+                    while(not processing.IsDone() ):
+                        continue
+                    super(ProcessEffect, self).reject()
+
         if(not self.cancel_clip_processing):
             # Load processed data into effect
             self.effect = openshot.EffectInfo().CreateEffect(self.effect_name)
