@@ -25,6 +25,7 @@
  You should have received a copy of the GNU General Public License
  along with OpenShot Library.  If not, see <http://www.gnu.org/licenses/>.
  """
+import openshot
 
 from PyQt5.QtCore import QSize, Qt, QPoint, QRegExp
 from PyQt5.QtGui import QDrag, QCursor
@@ -74,7 +75,10 @@ class FilesListView(QListView):
 
             menu.addAction(self.win.actionPreview_File)
             menu.addAction(self.win.actionSplitClip)
-            menu.addAction(self.win.actionSlowMotion)
+            
+            if openshot.Clip().COMPILED_WITH_CV and openshot.Clip().COMPILED_WITH_TORCH:
+                menu.addAction(self.win.actionSlowMotion)
+            
             menu.addAction(self.win.actionAdd_to_Timeline)
             menu.addAction(self.win.actionFile_Properties)
             menu.addSeparator()
