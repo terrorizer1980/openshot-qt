@@ -13,7 +13,7 @@
 	<key>CFBundleExecutable</key>
 	<string>launch-mac</string>
 	<key>CFBundleIconFile</key>
-	<string>icon.icns</string>
+	<string>openshot-mac-icon.png</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.video</string>
 	<key>LSMinimumSystemVersion</key>
