@@ -1955,6 +1955,20 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         else:
             log.info('File Properties Cancelled')
 
+    def actionExportClips_trigger(self):
+        log.info("Exporting clips")
+        # Get all highlighted items (or the item clicked on)
+        clips = self.selected_clips
+        if not clips:
+            log.info("No clips selected")
+            # TODO error popup "Select clips to export"
+            return
+        # Popup exporting...
+            # progress bar for % of all frames done
+            # Take pointers from the split clips popup window
+        return
+
+
     def actionDetailsView_trigger(self):
         log.info("Switch to Details View")
 
