@@ -695,7 +695,7 @@ class Export(QDialog):
         self.progressExportVideo.setValue(self.txtStartFrame.value())
 
         # Prompt error message
-        if self.txtStartFrame.value() == self.txtEndFrame.value():
+        if self.txtStartFrame.value() >= self.txtEndFrame.value():
             msg = QMessageBox()
             msg.setWindowTitle(_("Export Error"))
             msg.setText(_("Sorry, please select a valid range of frames to export"))
@@ -887,6 +887,8 @@ class Export(QDialog):
             last_exported_time = time.time()
             last_displayed_exported_portion = 0.0
 
+            # If exporting a list of clips, skip the below loop, and run a different function
+
             # Write each frame in the selected range
             for frame in range(video_settings.get("start_frame"), video_settings.get("end_frame") + 1):
                 # Update progress bar (emit signal to main window)
@@ -894,7 +896,7 @@ class Export(QDialog):
                 if ((frame % progressstep) == 0) or ((end_time_export - last_exported_time) > 1):
                     current_exported_portion = (frame - start_frame_export) * 1.0  / (end_frame_export - start_frame_export)
                     if ((current_exported_portion - last_displayed_exported_portion) > 0.0):
-                        # the log10 of the difference of the fraction of the completed frames is the negativ
+                        # the log10 of the difference of the fraction of the completed frames is the negative
                         # number of digits after the decimal point after which the first digit is not 0
                         digits_after_decimalpoint = math.ceil( -2.0 - math.log10( current_exported_portion - last_displayed_exported_portion ))
                     else:
