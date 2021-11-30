@@ -1036,6 +1036,8 @@ class Export(QDialog):
             super(Export, self).accept()
 
     def exportClips(self):
+        self.disableControls()
+        _ = get_app()._tr
         interlacedIndex = self.cboInterlaced.currentIndex()
         video_settings = {  "vformat": self.txtVideoFormat.text(),
                             "vcodec": self.txtVideoCodec.text(),
@@ -1049,30 +1051,93 @@ class Export(QDialog):
                             "interlace": interlacedIndex in [1, 2],
                             "topfirst": interlacedIndex == 1
                             }
+        self.disableControls()
         self.exporting = True
         if ( not self.export_clips ):
             return
         for c in self.export_clips:
-            extension = c.data.get("path").split('.').pop()
+            file_path = c.data.get("path")
+            extension = file_path.split('.').pop()
             clip_name = c.data.get("name")
-            path = f"{clip_name}.{extension}"
+            start_time = c.data.get("start")
+            end_time = c.data.get("end")
+            fps = c.data.get('fps').get('num') / c.data.get('fps').get('den')
+            # and end time * frames per second
+            start_frame, end_frame = int(start_time * fps), int(end_time*fps)
+            project_folder = os.path.realpath( os.path.join(info.BLENDER_PATH, "../../"))
+            export_path = os.path.join(project_folder, f"{clip_name}.{extension}")
             # Get clip's name
-            w = openshot.FFmpegWriter(path)
+            w = openshot.FFmpegWriter(export_path)
+
+            # Init export settings
+            interlacedIndex = self.cboInterlaced.currentIndex()
+            video_settings = {"vformat": self.txtVideoFormat.text(),
+                              "vcodec": self.txtVideoCodec.text(),
+                              "fps": {"num": self.txtFrameRateNum.value(), "den": self.txtFrameRateDen.value()},
+                              "width": self.txtWidth.value(),
+                              "height": self.txtHeight.value(),
+                              "pixel_ratio": {"num": self.txtPixelRatioNum.value(),
+                                              "den": self.txtPixelRatioDen.value()},
+                              "video_bitrate": int(self.convert_to_bytes(self.txtVideoBitRate.text())),
+                              "start_frame": self.txtStartFrame.value(),
+                              "end_frame": self.txtEndFrame.value(),
+                              "interlace": interlacedIndex in [1, 2],
+                              "topfirst": interlacedIndex == 1
+                              }
+
+            audio_settings = {"acodec": self.txtAudioCodec.text(),
+                              "sample_rate": self.txtSampleRate.value(),
+                              "channels": self.txtChannels.value(),
+                              "channel_layout": self.cboChannelLayout.currentData(),
+                              "audio_bitrate": int(self.convert_to_bytes(self.txtAudioBitrate.text()))
+                              }
+
+            export_type = self.cboExportTo.currentText()
+            # Set video options
+            if export_type in [_("Video & Audio"), _("Video Only"), _("Image Sequence")]:
+                w.SetVideoOptions(True,
+                                  video_settings.get("vcodec"),
+                                  openshot.Fraction(video_settings.get("fps").get("num"),
+                                                    video_settings.get("fps").get("den")),
+                                  video_settings.get("width"),
+                                  video_settings.get("height"),
+                                  openshot.Fraction(video_settings.get("pixel_ratio").get("num"),
+                                                    video_settings.get("pixel_ratio").get("den")),
+                                  video_settings.get("interlace"),
+                                  video_settings.get("topfirst"),
+                                  video_settings.get("video_bitrate"))
+            # Set audio options
+            if export_type in [_("Video & Audio"), _("Audio Only")]:
+                w.SetAudioOptions(True,
+                                  audio_settings.get("acodec"),
+                                  audio_settings.get("sample_rate"),
+                                  audio_settings.get("channels"),
+                                  audio_settings.get("channel_layout"),
+                                  audio_settings.get("audio_bitrate"))
+            w.PrepareStreams()
             w.Open()
 
-            # Todo setup clip reader,
             # Or a file reaer, and do the math for the first/last frame
-            clip_reader = None
+            clip_reader = openshot.Clip(file_path)
+            clip_reader.Open()
 
-            for frame in range(video_settings.get("start_frame"), video_settings.get("end_frame") + 1):
+            log.info(f"Starting to write frames to {export_path}")
+            for frame in range(start_frame, end_frame):
                 w.WriteFrame(clip_reader.GetFrame(frame))
 
                 # Check if we need to bail out
                 if not self.exporting:
                     break
+            clip_reader.Close()
 
             # Close writer
             w.Close()
+            self.exporting=False
+            self.cancel_button.setVisible(False)
+            self.export_button.setVisible(False)
+
+            # Reveal done button
+            self.close_button.setVisible(True)
 
     def reject(self):
         if self.exporting and not self.close_button.isVisible():
