@@ -1957,13 +1957,12 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
 
     def actionExportClips_trigger(self):
         log.info("Exporting clips")
-        # Get all highlighted items (or the item clicked on)
-        clips = self.selected_clips
-        if not clips:
-            log.info("No clips selected")
-            # TODO error popup "Select clips to export"
-            return
-        # Popup exporting...
+        # f = self.files_model.current_file()
+        f = self.selected_files()
+        from windows.export import Export
+        exp = Export(export_clips=f)
+        exp.exec()
+        #
             # progress bar for % of all frames done
             # Take pointers from the split clips popup window
         return

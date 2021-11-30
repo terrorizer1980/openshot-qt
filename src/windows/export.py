@@ -68,8 +68,17 @@ class Export(QDialog):
     ExportFrame = pyqtSignal(str, int, int, int, str)
     ExportEnded = pyqtSignal(str)
 
+    clip_mode = False
+
     def __init__(self, *args, **kwargs):
+        self.export_clips = kwargs.pop("export_clips", None)
+        self.clip_mode = bool(self.export_clips)
         super().__init__(*args, **kwargs)
+
+        # if kwargs "export_clips" : [array, of, clips]
+        # Export each. Set progress bar out of total
+        # Frames written
+        # import pdb; pdb.set_trace()
 
         # Load UI from designer & init
         ui_util.load_ui(self, self.ui_path)
@@ -670,6 +679,9 @@ class Export(QDialog):
         self.btnBrowse.setEnabled(True)
 
     def accept(self):
+        if self.clip_mode:
+            self.exportClips()
+            return
         """ Start exporting video """
 
         # Build the export window title
@@ -1022,6 +1034,45 @@ class Export(QDialog):
         else:
             # Accept dialog
             super(Export, self).accept()
+
+    def exportClips(self):
+        interlacedIndex = self.cboInterlaced.currentIndex()
+        video_settings = {  "vformat": self.txtVideoFormat.text(),
+                            "vcodec": self.txtVideoCodec.text(),
+                            "fps": { "num" : self.txtFrameRateNum.value(), "den": self.txtFrameRateDen.value()},
+                            "width": self.txtWidth.value(),
+                            "height": self.txtHeight.value(),
+                            "pixel_ratio": {"num": self.txtPixelRatioNum.value(), "den": self.txtPixelRatioDen.value()},
+                            "video_bitrate": int(self.convert_to_bytes(self.txtVideoBitRate.text())),
+                            "start_frame": self.txtStartFrame.value(),
+                            "end_frame": self.txtEndFrame.value(),
+                            "interlace": interlacedIndex in [1, 2],
+                            "topfirst": interlacedIndex == 1
+                            }
+        self.exporting = True
+        if ( not self.export_clips ):
+            return
+        for c in self.export_clips:
+            extension = c.data.get("path").split('.').pop()
+            clip_name = c.data.get("name")
+            path = f"{clip_name}.{extension}"
+            # Get clip's name
+            w = openshot.FFmpegWriter(path)
+            w.Open()
+
+            # Todo setup clip reader,
+            # Or a file reaer, and do the math for the first/last frame
+            clip_reader = None
+
+            for frame in range(video_settings.get("start_frame"), video_settings.get("end_frame") + 1):
+                w.WriteFrame(clip_reader.GetFrame(frame))
+
+                # Check if we need to bail out
+                if not self.exporting:
+                    break
+
+            # Close writer
+            w.Close()
 
     def reject(self):
         if self.exporting and not self.close_button.isVisible():
