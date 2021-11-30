@@ -1962,9 +1962,6 @@ class MainWindow(updates.UpdateWatcher, QMainWindow):
         from windows.export import Export
         exp = Export(export_clips=f)
         exp.exec()
-        #
-            # progress bar for % of all frames done
-            # Take pointers from the split clips popup window
         return
 
 
