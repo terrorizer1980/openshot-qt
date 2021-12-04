@@ -1036,8 +1036,36 @@ class Export(QDialog):
             super(Export, self).accept()
 
     def exportClips(self):
+        def framesInClip(cl, fps):
+            seconds = cl.data.get('end') - cl.data.get('start')
+            return seconds * fps + 1
+
         self.disableControls()
         _ = get_app()._tr
+        if ( not self.export_clips ):
+            return
+        # Init export settings
+        interlacedIndex = self.cboInterlaced.currentIndex()
+        video_settings = {"vformat": self.txtVideoFormat.text(),
+                          "vcodec": self.txtVideoCodec.text(),
+                          "fps": {"num": self.txtFrameRateNum.value(), "den": self.txtFrameRateDen.value()},
+                          "width": self.txtWidth.value(),
+                          "height": self.txtHeight.value(),
+                          "pixel_ratio": {"num": self.txtPixelRatioNum.value(),
+                                          "den": self.txtPixelRatioDen.value()},
+                          "video_bitrate": int(self.convert_to_bytes(self.txtVideoBitRate.text())),
+                          "start_frame": self.txtStartFrame.value(),
+                          "end_frame": self.txtEndFrame.value(),
+                          "interlace": interlacedIndex in [1, 2],
+                          "topfirst": interlacedIndex == 1
+                          }
+
+        audio_settings = {"acodec": self.txtAudioCodec.text(),
+                          "sample_rate": self.txtSampleRate.value(),
+                          "channels": self.txtChannels.value(),
+                          "channel_layout": self.cboChannelLayout.currentData(),
+                          "audio_bitrate": int(self.convert_to_bytes(self.txtAudioBitrate.text()))
+                          }
         interlacedIndex = self.cboInterlaced.currentIndex()
         video_settings = {  "vformat": self.txtVideoFormat.text(),
                             "vcodec": self.txtVideoCodec.text(),
@@ -1051,46 +1079,26 @@ class Export(QDialog):
                             "interlace": interlacedIndex in [1, 2],
                             "topfirst": interlacedIndex == 1
                             }
+
         self.disableControls()
         self.exporting = True
-        if ( not self.export_clips ):
-            return
+
+        # Total number of frames
+        fps = video_settings.get("fps").get("num") / video_settings.get("fps").get("den")
+        totalFrames = 0
+        currentFrame = 0
+        for c in self.export_clips:
+            totalFrames += framesInClip(c, fps)
+
         for c in self.export_clips:
             file_path = c.data.get("path")
             extension = file_path.split('.').pop()
             clip_name = c.data.get("name")
-            start_time = c.data.get("start")
-            end_time = c.data.get("end")
-            fps = c.data.get('fps').get('num') / c.data.get('fps').get('den')
             # and end time * frames per second
-            start_frame, end_frame = int(start_time * fps), int(end_time*fps)
             project_folder = os.path.realpath( os.path.join(info.BLENDER_PATH, "../../"))
             export_path = os.path.join(project_folder, f"{clip_name}.{extension}")
             # Get clip's name
             w = openshot.FFmpegWriter(export_path)
-
-            # Init export settings
-            interlacedIndex = self.cboInterlaced.currentIndex()
-            video_settings = {"vformat": self.txtVideoFormat.text(),
-                              "vcodec": self.txtVideoCodec.text(),
-                              "fps": {"num": self.txtFrameRateNum.value(), "den": self.txtFrameRateDen.value()},
-                              "width": self.txtWidth.value(),
-                              "height": self.txtHeight.value(),
-                              "pixel_ratio": {"num": self.txtPixelRatioNum.value(),
-                                              "den": self.txtPixelRatioDen.value()},
-                              "video_bitrate": int(self.convert_to_bytes(self.txtVideoBitRate.text())),
-                              "start_frame": self.txtStartFrame.value(),
-                              "end_frame": self.txtEndFrame.value(),
-                              "interlace": interlacedIndex in [1, 2],
-                              "topfirst": interlacedIndex == 1
-                              }
-
-            audio_settings = {"acodec": self.txtAudioCodec.text(),
-                              "sample_rate": self.txtSampleRate.value(),
-                              "channels": self.txtChannels.value(),
-                              "channel_layout": self.cboChannelLayout.currentData(),
-                              "audio_bitrate": int(self.convert_to_bytes(self.txtAudioBitrate.text()))
-                              }
 
             export_type = self.cboExportTo.currentText()
             # Set video options
@@ -1117,18 +1125,28 @@ class Export(QDialog):
             w.PrepareStreams()
             w.Open()
 
+            start_time = c.data.get("start")
+            end_time = c.data.get("end")
+            start_frame, end_frame = int(start_time * fps), int(end_time*fps)
+
             # Or a file reaer, and do the math for the first/last frame
             clip_reader = openshot.Clip(file_path)
             clip_reader.Open()
 
             log.info(f"Starting to write frames to {export_path}")
+
             for frame in range(start_frame, end_frame):
                 w.WriteFrame(clip_reader.GetFrame(frame))
 
                 # Check if we need to bail out
                 if not self.exporting:
                     break
+                # TODO DISPLAY COMPLETE RATIO TO PROGRESS BAR
             clip_reader.Close()
+            currentFrame += 1
+            format_of_progress_string = "%4." + str(digits_after_decimalpoint) + "f%% "
+            self.updateProgressBar(self, title_message, 0, toatalFrames, currentFrame,
+                                  format_of_progress_string)
 
             # Close writer
             w.Close()
