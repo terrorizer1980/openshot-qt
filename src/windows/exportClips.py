@@ -1,138 +1,87 @@
-from PyQt5.QtWidgets import QApplication, QVBoxLayout, QLabel, QWidget, QPushButton, QDialog
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QDialog, QLabel
+from PyQt5.QtCore import Qt
 from classes.filePicker import filePicker
+from classes.app import get_app
+from classes.logger import log
 
-# _ = get_app()._tr
+_ = get_app()._tr
 
 class clipExportWindow(QDialog):
     """A popup to export clips as mp4 files
     in a folder of the user's choosing"""
-    layout = QVBoxLayout()
     fp: filePicker
     export_button: QPushButton
+    exporting = False
 
-    # def __init__(self, parent, *args, **kwargs):
-    #     super().__init__(parent)
     def __init__(self, export_clips_arg, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.export_clips = export_clips_arg
-        # self.export_clips = kwargs.get("export_clips", [])
         self._create_widgets()
 
     def _create_widgets(self):
         #create
+        self.layout = QVBoxLayout()
         self.fp = filePicker(folder_only=True, export_clips=self.export_clips)
-        self.export_button = QPushButton("Export")
+        self.export_button = QPushButton(_("Export"))
+        self.export_button.clicked.connect(self.exportClips)
+        # self.export_button.clicked.connect(self._export_button_pressed)
+        self.close_button = QPushButton(_("Close"))
+        self.close_button.clicked.connect(lambda : self.done(0))
+        self.cancel_button = QPushButton(_("Cancel"))
+        self.cancel_button.clicked.connect(self.cancel_button_cicked)
+        self.complete_lbl = QLabel(_("Percent Complete: %s") % format(0, ".2%"))
+
+        from PyQt5.QtGui import QPalette
+        p = QPalette()
+        p.setColor(QPalette.Highlight, Qt.green)
 
         self.layout.addWidget(self.fp)
+        self.layout.addWidget(self.complete_lbl)
         self.layout.addWidget(self.export_button)
+        self.layout.addWidget(self.close_button)
+        self.layout.addWidget(self.cancel_button)
+        self.cancel_button.hide()
         self.setMinimumWidth(500)
         self.setLayout(self.layout)
-
-    def _export_button_pressed(self):
-        print("BUTTON PRESSED")
-        pass
-        # copy export loop from export.py
 
     def setPath(self, p: str):
         self.fp.setPath(p)
 
+    def cancel_button_cicked(self):
+        self.exporting = False
+
     def exportClips(self):
+        if ( not self.export_clips ):
+            return
         import openshot, os
-        from classes import info
-
-        title_message = ""
-
-        def framesInClip(cl, fps):
+        def framesInClip(cl):
+            fps = cl.data.get("fps").get("num") / cl.data.get("fps").get("den")
             seconds = cl.data.get('end') - cl.data.get('start')
             return seconds * fps + 1
 
-        self.disableControls()
-        if ( not self.export_clips ):
-            return
-        # Init export settings
-        interlacedIndex = self.cboInterlaced.currentIndex()
-        video_settings = {"vformat": self.txtVideoFormat.text(),
-                          "vcodec": self.txtVideoCodec.text(),
-                          "fps": {"num": self.txtFrameRateNum.value(), "den": self.txtFrameRateDen.value()},
-                          "width": self.txtWidth.value(),
-                          "height": self.txtHeight.value(),
-                          "pixel_ratio": {"num": self.txtPixelRatioNum.value(),
-                                          "den": self.txtPixelRatioDen.value()},
-                          "video_bitrate": int(self.convert_to_bytes(self.txtVideoBitRate.text())),
-                          "start_frame": self.txtStartFrame.value(),
-                          "end_frame": self.txtEndFrame.value(),
-                          "interlace": interlacedIndex in [1, 2],
-                          "topfirst": interlacedIndex == 1
-                          }
-
-        audio_settings = {"acodec": self.txtAudioCodec.text(),
-                          "sample_rate": self.txtSampleRate.value(),
-                          "channels": self.txtChannels.value(),
-                          "channel_layout": self.cboChannelLayout.currentData(),
-                          "audio_bitrate": int(self.convert_to_bytes(self.txtAudioBitrate.text()))
-                          }
-        interlacedIndex = self.cboInterlaced.currentIndex()
-        video_settings = {  "vformat": self.txtVideoFormat.text(),
-                            "vcodec": self.txtVideoCodec.text(),
-                            "fps": { "num" : self.txtFrameRateNum.value(), "den": self.txtFrameRateDen.value()},
-                            "width": self.txtWidth.value(),
-                            "height": self.txtHeight.value(),
-                            "pixel_ratio": {"num": self.txtPixelRatioNum.value(), "den": self.txtPixelRatioDen.value()},
-                            "video_bitrate": int(self.convert_to_bytes(self.txtVideoBitRate.text())),
-                            "start_frame": self.txtStartFrame.value(),
-                            "end_frame": self.txtEndFrame.value(),
-                            "interlace": interlacedIndex in [1, 2],
-                            "topfirst": interlacedIndex == 1
-                            }
-
-        self.disableControls()
-        self.exporting = True
-
         # Total number of frames
-        fps = video_settings.get("fps").get("num") / video_settings.get("fps").get("den")
-        totalFrames = 0
-        currentFrame = 0
+        totalFrames, currentFrame = 0, 0
+        self.exporting=True
+        self.cancel_button.show() # NOTE: this extends the window, but nothing is drawn. Maybe trigger a redraw?
         for c in self.export_clips:
-            totalFrames += framesInClip(c, fps)
+            totalFrames += framesInClip(c)
 
         for c in self.export_clips:
+            # If it's a file, just copy it to the destination folder
             file_path = c.data.get("path")
-            extension = file_path.split('.').pop()
-            clip_name = c.data.get("name")
-            # and end time * frames per second
-            project_folder = os.path.realpath( os.path.join(info.BLENDER_PATH, "../../"))
-            export_path = os.path.join(project_folder, f"{clip_name}.{extension}")
-            # Get clip's name
+            extension = "mp4"
+            project_folder = self.fp.getPath()
+            export_path = os.path.join(project_folder, f"{self.export_name(c)}.{extension}")
             w = openshot.FFmpegWriter(export_path)
 
-            export_type = self.cboExportTo.currentText()
-            # Set video options
-            if export_type in [_("Video & Audio"), _("Video Only"), _("Image Sequence")]:
-                w.SetVideoOptions(True,
-                                  video_settings.get("vcodec"),
-                                  openshot.Fraction(video_settings.get("fps").get("num"),
-                                                    video_settings.get("fps").get("den")),
-                                  video_settings.get("width"),
-                                  video_settings.get("height"),
-                                  openshot.Fraction(video_settings.get("pixel_ratio").get("num"),
-                                                    video_settings.get("pixel_ratio").get("den")),
-                                  video_settings.get("interlace"),
-                                  video_settings.get("topfirst"),
-                                  video_settings.get("video_bitrate"))
-            # Set audio options
-            if export_type in [_("Video & Audio"), _("Audio Only")]:
-                w.SetAudioOptions(True,
-                                  audio_settings.get("acodec"),
-                                  audio_settings.get("sample_rate"),
-                                  audio_settings.get("channels"),
-                                  audio_settings.get("channel_layout"),
-                                  audio_settings.get("audio_bitrate"))
+            self.setupWriter(c, w)
             w.PrepareStreams()
             w.Open()
 
             start_time = c.data.get("start")
             end_time = c.data.get("end")
+            fps = c.data.get("fps").get("num") / c.data.get("fps").get("den")
             start_frame, end_frame = int(start_time * fps), int(end_time*fps)
 
             # Or a file reaer, and do the math for the first/last frame
@@ -140,25 +89,58 @@ class clipExportWindow(QDialog):
             clip_reader.Open()
 
             log.info(f"Starting to write frames to {export_path}")
-
-            for frame in range(start_frame, end_frame):
+            for frame in range(start_frame+1, end_frame+1):
                 w.WriteFrame(clip_reader.GetFrame(frame))
-
-                # Check if we need to bail out
+                if frame % 20 == 0:
+                    # Update progress bar
+                    ratio = currentFrame/totalFrames
+                    completeString = _("Percent Complete: %s") % format(ratio, ".2%")
+                    log.info(completeString)
+                    self.complete_lbl.setText(completeString) # Doesn't upate until exporting is done
+                currentFrame += 1
                 if not self.exporting:
                     break
-                # TODO DISPLAY COMPLETE RATIO TO PROGRESS BAR
             clip_reader.Close()
-            currentFrame += 1
-            format_of_progress_string = "%4." + str(digits_after_decimalpoint) + "f%% "
-            self.updateProgressBar(self, title_message, 0, toatalFrames, currentFrame,
-                                   format_of_progress_string)
-
-            # Close writer
             w.Close()
-            self.exporting=False
-            self.cancel_button.setVisible(False)
-            self.export_button.setVisible(False)
+            self.complete_lbl.setText(_("Export Complete!"))  # Doesn't upate until exporting is done
+            log.info("Finished Exporting Clip: %s" % export_path)
+        exporting = False
+        self.export_button.hide()
 
-            # Reveal done button
-            self.close_button.setVisible(True)
+    def export_name(self, clip):
+        # Name clips with a suffix of their start and end time.
+        name = clip.data.get("name")
+        name += f" [{format(clip.data.get('start'), '.2f')} to {format(clip.data.get('end'), '.2f')}]"
+        # if a file, not a clip:
+            # append [ 0.00 to {flile length} ]
+        return name
+
+
+    def setupWriter(self, clip, writer):
+        import openshot
+        export_type = "Video & Audio"
+        # Set video options
+        if export_type in [_("Video & Audio"), _("Video Only"), _("Image Sequence")]:
+            writer.SetVideoOptions(True,
+                                   "libx264",
+                                   openshot.Fraction(clip.data.get("fps").get("num"),
+                                                     clip.data.get("fps").get("den")),
+                                   clip.data.get("width"),
+                                   clip.data.get("height"),
+                                   openshot.Fraction(clip.data.get("pixel_ratio").get("num"),
+                                                     clip.data.get("pixel_ratio").get("den")),
+                                   # c.data.get("interlace"),
+                                   False,
+                                   # c.data.get("topfirst"),
+                                   False,
+                                   22,  # bitrate below 256 interpreted as CRF
+                                   # c.data.get("video_bitrate")
+                                   )
+            # Set audio options
+        if export_type in [_("Video & Audio"), _("Audio Only")]:
+            writer.SetAudioOptions(True,
+                                   clip.data.get("acodec", "aac"),
+                                   clip.data.get("sample_rate"),
+                                   clip.data.get("channels"),
+                                   clip.data.get("channel_layout"),
+                                   clip.data.get("audio_bit_rate"))

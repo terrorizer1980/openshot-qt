@@ -2,6 +2,9 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QFileDialog, QCompleter, 
 from PyQt5.QtWidgets import QGridLayout, QWidget, QHBoxLayout
 from PyQt5 import QtCore
 import os
+
+from classes.app import get_app
+_ = get_app()._tr
 # TODO: test on windows
 
 ## Remove before FLIGHT
@@ -37,7 +40,7 @@ class filePicker(QWidget):
 
     def _createWidgets(self):
         self.layout = QHBoxLayout(self)
-        self.lbl = QLabel(self.PROMPT)
+        self.lbl = QLabel(_(self.PROMPT))
         # Browse Button
         self.browseButton = QPushButton("Browse...")
         self.browseButton.clicked.connect(self._browse_button_pushed)
@@ -59,7 +62,7 @@ class filePicker(QWidget):
         com = QCompleter(dirs)
         com.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         com.setFilterMode(QtCore.Qt.MatchContains)
-        com.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        # com.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         line.setCompleter(com)
 
     def _childDirs(self, path: str):
@@ -81,8 +84,11 @@ class filePicker(QWidget):
         line.completer().model().setStringList(dirs)
         self._UPDATE_LOCK = False
 
-    def getPath() -> str:
+    def getPath(self) -> str:
         return self.dirLine.text()
 
     def setPath(self, p: str):
         self.dirLine.setText(p)
+
+    def setPrompt(self, p: str):
+        self.PROMPT = p
